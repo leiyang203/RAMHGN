@@ -1,0 +1,1754 @@
+Chen et al. Journal of Translational Medicine
+https://doi.org/10.1186/s12967-025-06783-x
+
+(2025) 23:753
+
+Journal of
+Translational Medicine
+
+Open Access
+
+RESEARCH
+
+MRDDA: a multi‑relational graph neural
+network for drug–disease association prediction
+Congzhou Chen1, Yaozheng Zhou1, Yinghong Li1, Jin Xu2, Demin Li3* and Lingfeng Wang1*   
+
+Abstract
+Background Drug repositioning offers a promising avenue for accelerating drug development and reducing costs.
+Recently, computational repositioning approaches have gained attraction for identifying potential drug-disease
+associations (DDAs). Biological entities such as drugs, genes, proteins, RNA, and diseases interact within a complex
+network. How to adequately extract the intrinsic relationships among them and accurately predict the drug-disease
+associations remains a challenge.
+Methods In this study, we introduce MRDDA, a novel graph neural network model that utilizes multiple relations,
+for drug repositioning. First, we design a hybrid graph convolutional framework to capture both local and global
+representations of drugs and diseases. Subsequently, a meta-path-based approach is employed to capture high-order
+topological representations from these entities. Finally, we present a layer-wise attention mechanism to integrate
+embeddings from various layers.
+Results The MRDDA model demonstrated superior performance in predicting drug-disease associations compared
+to existing methods, achieving higher results during the 10-fold cross-validation on three benchmark datasets.
+Notably, in our case studies focusing on Alzheimer’s disease and breast cancer, MRDDA effectively identified several
+promising drug candidates that were previously unrecognized for these conditions. Additionally, molecular docking experiments reinforced our results by confirming the binding affinities and interactions between selected drugs
+and their target diseases, suggesting a solid basis for further experimental studies.
+Conclusion MRDDA offers an innovative framework for drug repositioning by effectively modeling and predicting
+drug-disease associations through advanced graph neural network techniques. The model’s ability to integrate multirelational data with greater accuracy paves the way for more efficient identification of potential therapeutic uses
+for existing drugs, ultimately contributing to the acceleration of drug development and reduced costs in the pharmaceutical industry.
+Keywords Drug–disease association, Drug repositioning, Graph neural network, Multiple relations
+
+*Correspondence:
+Demin Li
+deminli2008@sina.com
+Lingfeng Wang
+lfwang@mail.buct.edu.cn
+Full list of author information is available at the end of the article
+© The Author(s) 2025. Open Access This article is licensed under a Creative Commons Attribution-NonCommercial-NoDerivatives 4.0
+International License, which permits any non-commercial use, sharing, distribution and reproduction in any medium or format, as long
+as you give appropriate credit to the original author(s) and the source, provide a link to the Creative Commons licence, and indicate if
+you modified the licensed material. You do not have permission under this licence to share adapted material derived from this article or
+parts of it. The images or other third party material in this article are included in the article’s Creative Commons licence, unless indicated
+otherwise in a credit line to the material. If material is not included in the article’s Creative Commons licence and your intended use is not
+permitted by statutory regulation or exceeds the permitted use, you will need to obtain permission directly from the copyright holder. To
+view a copy of this licence, visit http://​creat​iveco​mmons.​org/​licen​ses/​by-​nc-​nd/4.​0/.
+
+Chen et al. Journal of Translational Medicine
+
+(2025) 23:753
+
+Introduction
+Drug discovery, a cornerstone of pharmaceutical
+research, is important in the development of new treatments for various diseases. Traditional drug discovery is
+marked by extensive timelines, elevated costs, and significant attrition [1]. This has spurred growing interest in
+alternative strategies to identify new treatment options.
+Rapid advances in artificial intelligence have boosted
+interest in drug repositioning for cost-effective medical
+discoveries. Numerous applications highlight the essential role of computational drug repositioning in revolutionizing pharmaceutical development. [2–6]
+Computational strategies for drug repositioning are
+categorized into three primary types: network-based
+approaches, machine learning techniques, and deep
+learning frameworks. Specifically, network-based
+approaches predict unknown drug-disease associations
+(DDAs) through the synthesis and examination of biological network architectures. For example, Luo et al.
+[7] introduced MBiRW, which establishes a drug-disease heterogeneous network via similarity metrics and
+utilizes a Bi-Random Walk algorithm to discover new
+applications for existing drugs. Likewise, Chen et al. [8]
+created ProbS and HeatS, forecasting DDAs by harnessing essential network topology metrics. However, the
+success of these methods often depends on the integrity
+and thoroughness of the available network data, with
+partial or incorrect data potentially resulting in unreliable predictions.
+Over the past decades, researchers have explored
+machine learning algorithms for drug repositioning.
+These approaches utilize large-scale biological and
+chemical data to search new therapeutic uses for existing drugs. Gottlieb et al. [9] proposed PREDICT for
+large-scale drug indication prediction. This method uses
+multiple similarity measures to infer potential DDAs.
+PREDICT quantifies similarities between drug-disease
+pairs and ranks the accumulated evidence using logistic regression. Zhou et al. [10] introduced NEDD, which
+employs meta-path-based method on a heterogeneous
+drug-disease graph to derive embeddings. A classifier is
+then trained to identify potential DDAs. Yang et al.[11]
+proposed MKDGRLS for drug repositioning. They calculated multiple kernels for drugs and diseases, integrated
+them with Laplacian regularization in MKDGRLS, and
+used the Alternating Least Squares algorithm for prediction. Zhao et al.[12] introduced DDAGDL, which utilizes
+an attention-based geometric deep learning network to
+learn feature representations, ultimately employing the
+use of XGBoost for the classification task. Zhang et al.
+[13] propose NCH-DDA, which employs single- and
+multi-neighborhood modules along with contrastive
+learning to learn the information of drugs and diseases.
+
+Page 2 of 14
+
+Recently, the surge in deep learning has sparked
+numerous research endeavors. Deep learning maps
+high-dimensional sparse features to lower-dimensional
+spaces, preserving as much information as possible.
+Graph neural networks (GNNs), a prominent branch of
+deep learning, have shown notable advancements in drug
+repositioning tasks. For instance, Yu et al. [14] introduced LAGCN, utilizing graph convolution to generate
+embeddings for drugs and diseases and integrating them
+through an attention mechanism. Tang et al. [15] further
+expanded this area with DRGBCN, which merges varied data sources to predict potential DDAs. This model
+uses graph convolution paired with a layer attention
+mechanism to derive embeddings, supplemented by a
+bilinear attention network that delineates the relationships of DDA pairs. Sun et al. [16] architected PSGCN,
+which extracts context-specific information from partner graphs and employs layer attention to assimilate
+features across multiple scales. To capture fine-grained,
+context-specific information within network structures,
+subgraph-based methods have emerged as a complementary approach to GNNs. For example, Wang et al.
+[17] propose HGDDA, a hypergraph learning method
+with subgraph matching to predict DDAs. It derives
+H-hop subgraphs from a bipartite drug–disease association graph and then employs hypergraph convolution to
+extract subgraph features for accurate association prediction. Sun et al. [18] propose SAGCN, which builds a heterogeneous network and uses a GCN-equipped subgraph
+extractor to capture 1- and 2-hop features, integrating
+them through attention mechanisms to learn node representations for prediction. Shang et al. [19] propose HNFDDA, a transformer-based model for DDA prediction. It
+derives subgraphs based on first-order common neighbors and then applies subgraph contrastive learning to
+extract node information.
+Despite the promising outcomes achieved by the aforementioned methods in drug repositioning, they exhibit
+notable limitations. Most existing methods primarily
+focus on extracting features from complex drug-disease
+networks, often neglecting the broader biological context. While some methods employ subgraphs to capture
+local topological information, these are typically limited
+to extracting specific association patterns rather than
+modeling comprehensive relational structures. In reality,
+biological data encompass diverse entities and interactions, presenting two main challenges. The first challenge
+is to integrate various types of biological data while preserving their unique details. The second challenge is to
+capture both high-order topological associations and
+interconnections between entities.
+To address these challenges, we propose a novel
+method called MRDDA, which distinguishes itself by
+
+Chen et al. Journal of Translational Medicine
+
+(2025) 23:753
+
+incorporating multiple entities and high-order topological information to predict DDAs. The methodology begins with constructing a heterogeneous network
+that integrates various biological entities. Subsequently,
+MRDDA employs hybrid graph convolution network to
+obtain relations between drugs and diseases, capturing
+a comprehensive view of the biological system and the
+interconnections between entities. Additionally, metapath2vec [20], a meta-path-based graph representation
+learning method, is utilized to extract high-level topological associations from the biological network. This process uncovers intricate relationships and patterns within
+the data. Since embeddings from diverse representation
+learning layers contain information from different views,
+we implement a layer attention mechanism to distinguish
+their contributions for adaptive fusion. Finally, a bilinear
+decoder predicts unknown drug–disease associations. In
+summary, this study’s primary contributions are outlined
+as follows:
+(1) We designed MRDDA, a novel drug repositioning
+method that concurrently learns representations of
+both drugs and diseases through the integration of
+multiple relations and high-order topological information
+(2) Our approach segments the heterogeneous graph
+into multiple subnetworks and devises a hybrid
+graph convolution framework. This framework is
+instrumental in acquiring local and global representations of drugs and diseases, ensuring that the
+unique information inherent in different types of
+nodes is accurately preserved and reflected during
+the aggregation process.
+(3) We apply innovative techniques such as hybrid
+graph convolution and metapath2vec to learn
+embeddings and extract high-order associations,
+capturing intricate relationships and patterns
+within the biological network.
+(4) Comprehensive experiments across three benchmark datasets conclusively illustrate our method’s
+superiority over five contemporary approaches.
+Additionally, case studies highlight MRDDA’s realworld potential, demonstrating its promising applicability beyond theoretical constructs.
+
+Page 3 of 14
+
+validate the reliability of MRDDA, we assess its performance on two further benchmark datasets, Bdataset
+and Cdataset. In Bdataset, drug-disease associations,
+as cataloged by Zhang et al. [27], from the CTD database, include 269 drugs, 598 diseases, and 18,416 confirmed drug-disease links. This dataset also contains
+links between drugs and proteins, along with proteins
+and diseases, sourced from the DrugBank, STRING, and
+CTD databases. It comprises 6,040 proteins, 2,107 drugprotein associations, and 17,631 protein-disease associations. Lastly, Cdataset [7] comprises 2,532 associations
+involving (663 drugs from DrugBank and 409 diseases
+from the OMIM database) [28]. Further details on the
+data statistics are provided in Table 1.
+Construction of the heterogeneous network
+
+The drug-disease association network is depicted by
+the matrix Ad−r ∈ {0, 1}n×m, with n and m representing the quantities of drugs and diseases, respectively. In
+= 1 indicates an interaction between
+this matrix, Ad−r
+ij
+drug ri and disease dj , whereas a value of 0 indicates no
+association.
+The drug-drug similarity network is depicted using an
+adjacency matrix Ar ∈ Rn×n , formed from the matrix
+of drug similarities S r . To reduce the impact of noisy
+information, we adopt a strategy of aggregating top k
+(here k = 15) neighbors’ information. Specifically, if
+drug ri is among the k most similar drugs to drug rj ,
+Table 1 Overview of the three publicly available datasets
+utilized in this research
+Dataset
+Kdataset
+
+Bdataset
+
+Methods
+
+Node Type
+
+Num
+
+Cdataset
+
+Num
+
+Drug
+
+894
+
+Drug–drug
+
+14291
+
+Disease
+
+454
+
+Disease-disease
+
+7199
+
+Protein
+
+18877
+
+Protein–protein
+
+201382
+
+Gene
+
+20561
+
+Gene-gene
+
+712546
+
+Pathway
+
+314
+
+Pathway-pathway
+
+1669
+
+Drug-disease
+
+2704
+
+Disease-pathway
+
+19530
+
+Drug-protein
+
+4397
+
+Protein–gene
+
+18545
+
+Drug
+
+269
+
+Gene-pathway
+
+25995
+
+Drug–drug
+
+72361
+
+Disease
+
+598
+
+Disease-disease
+
+357604
+
+Protein
+
+6040
+
+Protein–protein
+
+592926
+
+Drug-disease
+
+18416
+
+Disease-protein
+
+17631
+
+Datasets
+
+In assessing the performance of MRDDA, we utilize a
+benchmark dataset, Kdataset [21], which includes five
+entities and ten relations between them. The biological data were extracted from DrugBank [22], CTD [23],
+KEGG [24], STRING [25], and UniProt [26]. To further
+
+Edge Type
+
+Drug-protein
+
+2107
+
+Drug
+
+663
+
+Drug–drug
+
+10582
+
+Disease
+
+409
+
+Disease-disease
+
+6507
+
+Drug-disease
+
+2532
+
+Chen et al. Journal of Translational Medicine
+
+(2025) 23:753
+
+then Arij is set to 1; otherwise, Arij = 0 . Similarly, the disease-disease similarity network Ad ∈ Rm×m is formulated according to the similarity of each disease pairs.
+If disease di is one of the top k nearest neighbors to
+disease dj according to the disease similarity matrix S d ,
+then Adij = 1; otherwise Adij = 0.
+The heterogeneous network is constructed on
+Kdataset with an entity type set {r, d, p, g, w}, which
+represents drug, disease, protein, gene, and pathway, respectively. The heterogeneous network is
+depicted as G = (V , E, R, T ), νi ∈ V means a distinct node within the network. An edge in the network is represented by (νi , r, νj ) ∈ E , where r ∈ R
+indicates the type of the edge, and T represents a
+group of possible node types. Specifically, we have
+T = {drug, disease, protein, gene, pathway}. For any
+given node νi ∈ V , its corresponding type is denoted
+by ti ∈ T . Therefore, there are ten types of edges in R,
+including drug–drug interaction, disease-disease interaction, protein–protein interaction, gene-gene interaction, pathway-pathway interaction, drug–protein
+association, drug–disease association, disease-pathway
+association, protein–gene association, and gene-pathway association. It is notable that this network includes
+both gene and pathway information, with each serving
+its unique function. In biology, pathways are closely
+connected to diseases and genes. Many diseases are
+linked to the dysfunction of specific biological pathways. For example, cancer is associated with the abnormal activation of cell growth signaling pathways. Each
+pathway’s reactions are regulated by proteins encoded
+by specific genes, and mutations in these genes can
+affect the pathway’s function, potentially leading to
+disease. In our model, pathways and genes respectively play a role in regulating biological functions and
+transmitting genetic information. Understanding the
+uniqueness of both pathways and genes is crucial for
+uncovering disease mechanisms and developing new
+therapeutic strategies.
+The biological heterogeneous network can be
+depicted using a adjacency matrix A and a feature matrix H. Formally, the adjacency matrix
+r
+d
+p
+g
+w
+r
+d
+p
+g
+w
+A ∈ R(N +N +N +N +N )×(N +N +N +N +N ) is defined
+as:
+ r
+
+A Ar−p 0
+0 Ar−d
+Ap−r Ap Ap−g 0
+0 
+
+
+g−p
+g
+g−w
+
+A A
+0 
+A= 0 A
+(1)
+
+ 0
+0 Aw−g Aw Aw−d 
+Ad−r 0
+0 Ad−w Ad
+
+Page 4 of 14
+
+where N r , N d , and so on, represent the number of corresponding entities, such as drugs and diseases.
+We use the computed similarities S r and S d , as initial
+features for the nodes representing drugs and diseases.
+The represents for these nodes are initialized as follows:
+ r  r
+
+H
+S 0
+=
+(2)
+0 Sd
+Hd
+The protein, gene, and pathway nodes are assigned initial
+features using the Init function. The node feature matrix
+r
+d
+p
+g
+w
+r
+d
+H ∈ R(N +N +N +N +N )×(N +N ) is illustrated as:
+
+ r 
+Hr
+H
+p
+p
+ H   Init(V ) 
+
+  
+H =  H g  =  Init(V g ) 
+(3)
+H w  Init(V w )
+Hd
+Hd
+Model architecture
+
+In the subsequent section, we provide a comprehensive
+explanation of the proposed drug repositioning framework. The complete structure of MRDDA is illustrated in
+Fig. 1.
+Encoder
+
+Graph convolution networks (GCN) are adept at modeling complex biological interactions using graphstructured data [29]. Each layer of a GCN aggregates
+information from adjacent nodes, refining the embeddings to serve as inputs for subsequent layers. The
+encoder of MRDDA primarily utilizes hybrid graph convolution operation to obtain local and global representations of drugs and diseases. This framework not only
+utilizes heterogeneous graph convolution to aggregate
+information from nodes with different types of relations, but also incorporates a subgraph-based strategy.
+We divide the graph into various subgraphs according to
+different types of relations, allowing the model to learn
+relation-specific features from each subgraph.
+Given the initially high-dimensional feature matrix
+H , we first implement a feature transformation layer
+to reduce its dimensions to a hidden space suitable for further processing. The node feature matrix
+r
+d
+p
+g
+w
+H (0) ∈ R(N +N +N +N +N )×K can be formulated as:
+
+H (0) = Linear(H)
+
+(4)
+
+where the Linear function represents a linear layer
+transformation and K denotes the size of the hidden
+embedding.
+The GCN aggregation function is typically designed
+for graphs with identical node attributes, referred to as
+isomorphic graphs. For node embedding updating in a
+
+Chen et al. Journal of Translational Medicine
+
+(2025) 23:753
+
+Page 5 of 14
+
+Fig. 1 The overall architecture of MRDDA. a The model takes the constructed biological heterogeneous network as input. b Devising a hybrid
+graph convolution framework to acquire knowledge about drugs and diseases at local and global levels. c Utilizing a meta-path-based approach
+to extract high-order associations. d Adaptive fusion is achieved by integrating node embeddings from diverse perspectives through the attention
+mechanism. e Applying the bilinear decoder to predict potential DDAs
+
+heterogeneous graph, we utilize heterogeneous GCN
+to propagate diverse biological network information
+across different edge types representing varying semantic information. Taking node i as an instance, we illustrate how the node captures distinct semantics based
+on different edges. For each edge type r ∈ R , the set of
+neighbors for node i is denoted as Nr (i). By integrating
+contributions from various edge types, we outline the
+method of information aggregation for node i in the l
+-th layer of the heterogeneous GCN as follows:
+
+
+� 1
+�
+�
+�
+hl−1 Wrl + brl 
+σ
+hli =
+(5)
+cji j
+r∈R
+
+j∈Nr (i)
+
+where Wrl and brl are the trainable weight matrix and bias
+specific to the l -th layer under edge type r , cji is the calculated results of the square root of the node degrees
+
+(i.e., cji =
+
+
+|Nr (j)| · |Nr (i)|), and σ =
+
+
+
+x if x ≥ 0
+is
+ax if x < 0
+
+the PReLU activation function.
+In summary, the computation for the l -th layer of heterogeneous GCN is presented:
+
+ (l−1) )
+ l = HeteroGCN(A, H
+H
+
+(6)
+
+After applying two heterogeneous GCN layers, we obtain
+the global node embeddings H (1). However, due to the
+imbalanced number of various associations, the node
+representations may exhibit bias. To address this issue,we
+introduce a subnetwork layer designed to enhance local
+association information. In this layer, the biological network is decomposed into multiple subnetworks, each
+guided by a distinct type of association. Each subnetwork
+consists of two types of nodes and includes three types of
+
+Chen et al. Journal of Translational Medicine
+
+(2025) 23:753
+
+Page 6 of 14
+
+relationships: intra-type associations for each node type
+and inter-type associations between them. For example,
+the drug-disease subnetwork G (d,r) comprises drug and
+disease nodes, and includes relationships for drug-drug,
+disease-disease, and drug-disease. The overall network is
+decomposed as follows:
+
+G = {G
+
+(d,r)
+
+,G
+
+(r,p)
+
+,G
+
+(p,g)
+
+,G
+
+(g,w)
+
+(7)
+
+}
+
+Considering two entities types ti , tj ∈ T , the adjacency
+(t )
+
+(tj )
+
+(t )
+
+matrix A(ti ,tj ) ∈ R(N i +N )×(N i +N
+work G (ti ,tj ) can be defined as:
+ t
+
+A i Ati −tj
+Ati tj = tj −ti
+A
+Atj
+
+(tj )
+
+) of
+
+the subnet-
+
+(8)
+
+Subsequently, each subnetwork undergoes processing
+with a HeteroGCN to capture node embeddings at the
+subnetwork level. The computation is illustrated as:
+ R(2)  
+
+H
+HeteroGCN(Ad,r , H D(1) , H R(1) )
+ H P(2)   HeteroGCN(Ar,p , H R(1) , H P(1) ) 
+
+ 
+
+(2)
+G(2)  =  HeteroGCN(Ap,g , H P(1) , H H (1) ) 
+H =
+H
+ 
+
+H W (2)  HeteroGCN(Ag,w , H H (1) , H W (1) )
+H D(2)
+HeteroGCN(Ad,r , H D(1) , H R(1) )
+(9)
+To address the varying contributions of different edge
+types in node embeddings, a graph attention layer [30] is
+employed for adaptive fusion. The attention weight αij of
+two adjoining nodes i and j is calculated:
+
+exp(LeakyReLU(aT [Whi �Whj ]))
+T
+k∈N (i) exp(LeakyReLU(a [Whi �Whk ]))
+
+αij = 
+
+(10)
+Here, hi represents the embedding of node i ; N (i) represents the neighbors of node i ; W is the weight matrix and
+a represents a parameter vector. The node embedding
+derived from multi-head attention is illustrated as:
+
+
+�K
+�
+�
+(3)
+(2)
+
+Hi = �
+αijk W k Hj 
+(11)
+� σ
+k=1
+
+j∈N (i)
+
+In biological heterogeneous networks, meta-paths
+encompass specific metabolic pathways or biological
+principles [31]. Accordingly, we employ the meta-path
+learning model metapath2vec [29] to extract high-order
+associations. This model utilizes a random walk algorithm to generate node embeddings based on the metapaths. Given a meta-path P:
+R1
+
+R2
+
+Rt
+
+Rl−1
+
+V1 −→ V2 −→ · · · Vt −
+→ Vt+1 · · · −−→ Vl
+transition probability at step i is illustrated:
+
+
+1
+
+if (vti+1 , vti ) ∈ E,
+
+|Nt+1 (vti )|
+
+
+
+
+φ(vi+1 ) = t + 1
+i+1
+i
+p(vt | vt , P) = 0
+if (vti+1 , vti ) ∈ E,
+
+
+
+φ(vi+1 ) � = t + 1
+
+
+
+0
+if (vti+1 , vti ) ∈
+/E
+
+(12)
+
+Here vti ∈ Vt and Nt+1 (vti ) are the Vt+1 type of neighborhood of node vti , φ(vi+1 ) returns the type of vi+1. In
+
+this research, we design a specific meta-path scheme P :
+disease → drug → protein → drug → disease. The node
+embeddings are derived by maximizing the network
+probability, which is formulated as follows:
+ 
+log p(ct | v; θ )
+arg max
+(13)
+θ
+v∈V t∈Tv ct ∈Nt (v)
+
+Nt (v) represents neighbors set of node v with type t , and
+p(ct | v; θ ) defines the conditional probability that the
+neighbor nodes of v are ct . The output H (4) can be formulated as:
+H (4) = metapath2vec(G, H (0) , P)
+
+(14)
+
+Embeddings at various layers represent distinct stages
+of data abstraction within the input graph. After the five
+layers, five k -dimensional embeddings for drugs and diseases are produced respectively. Further, an attention
+mechanism is employed to synthesize embeddings from
+different convolutional layers. The ultimate representations of drugs and diseases are characterized as follows:
+ R 
+H
+=
+αl H (l)
+(15)
+HD
+l
+
+where αl is dynamically determined by the model to
+reflect the influence of each layer’s embedding on the
+overall composite representation.
+Decoder
+
+In order to reassemble the adjacency matrix of drugdisease interactions, we employ a bilinear decoder
+A′ = f (H R , H D ), which is formulated as:
+
+A′ = sigmoid(H R W (H D )T )
+
+(16)
+
+Here W ∈ RK ×K is a trainable matrix. A′ij represents the
+probability that an interaction between drug ri and disease dj.
+Optimization
+
+We consider drug-disease interaction pairs as positive
+cases and all other pairs as negative cases. The set of
+positive cases is denoted as y+ and the set of negative
+cases is denoted as y−. It is noteworthy that the count of
+
+Chen et al. Journal of Translational Medicine
+
+(2025) 23:753
+
+Page 7 of 14
+
+positive cases is significantly lower compared to the negative cases. In the research, we employ a weighted crossentropy loss function to reduce the impact of imbalanced
+positive and negative samples:
+
+
+�
+�
+1 
+Loss = −
+
+log A′ij +
+log(1 − A′ij )
+n×m
++
+−
+(i,j)∈y
+
+(i,j)∈y
+
+(17)
+where n and m denote the counts of drugs and diseases,
++|
+and  = |y
+|y− | serves as the balancing factor that emphasizes the importance of established associations. Adam
+optimizer [32] and cyclic learning rate [33] are used to
+optimize the loss function.
+
+MRDDA. The settings for the comparison models were
+set as their optimal values recommended in their respective publications.
+Baseline model
+
+We conducted an analysis comparing five sophisticated
+models across three datasets: Kdataset, Bdataset, and
+Cdataset. The models assessed during the evaluation
+included LAGCN [14], NIMCGCN [34], DRWBNCF
+[35], REDDA [21], and DRAGNN [36].
+• LAGCN combines heterogeneous and neighbor
+information to compute embeddings for drugs and
+diseases efficiently.
+• NIMCGCN employs GCNs to derive node embeddings and uses an inductive neural matrix completion
+approach to fill the interaction matrix, commonly
+applied in predicting drug-disease associations
+DDAs.
+• DRWBNCF features a weighted bilinear graph convolution to amalgamate drug and disease information, subsequently using a multilayer perceptron for
+DDA predictions.
+• REDDA operates on a heterogeneous graph neural
+network framework, enhancing node representation
+learning through three distinct attention mechanisms.
+• DRAGNN combines heterogeneous and neighbor
+information to acquire embeddings for drugs and
+diseases efficiently.
+
+Results and discussion
+Experimental setting
+
+In our studies, we implemented 10-fold cross-validation (10-CV) to assess the performance of the proposed
+model. Each fold consisted of using a single subset for
+testing data while utilizing the remaining nine subsets for
+training. We removed drug-disease relationship structures that appear in the test set when constructing the
+heterogeneous network for training. The effectiveness of
+MRDDA across three benchmark datasets was assessed
+by utilizing the area under the receiver operating characteristic curve (AUROC) and the area under the precisionrecall curve (AUPR) as evaluation measures.
+MRDDA includes several hyperparameters such as the
+dimensionality of embeddings K , the starting learning
+rate for the optimizer lr, the number of training epochs
+α and the dropout rate β. We explored various combinations of parameters within the ranges K ∈ {64, 128, 256},
+lr ∈ {0.1, 0.01, 0.001}, α ∈ {1000, 2000, 3000, 4000} and
+β ∈ {0.1, 0.2, 0.3, 0.4, 0.5}. Through empirical adjustment, we determined the optimal settings for our experiments to be K = 128, lr = 0.01, α = 4000 and β = 0.4 for
+
+Performance of MRDDA
+Cross‑validation
+
+We conduct a 10-fold validation to assess the performance of MRDDA. As shown in Table 2, MRDDA
+achieves an impressive mean AUROC score of 0.931,
+
+Table 2 The AUROC and AUPR scores derived from the 10-fold cross-validation experiment
+Datasets
+
+NIMGCN
+
+LAGCN
+
+DRWBNCF
+
+REDDA
+
+DRAGNN
+
+MRDDA
+
+Kdataset
+
+0.668 ± 0.084
+
+0.835 ± 0.011
+
+0.837 ± 0.002
+
+0.923 ± 0.003
+
+0.899 ± 0.010
+
+0.949 ± 0.003
+
+Bdataset
+
+0.675 ± 0.007
+
+0.861 ± 0.012
+
+0.848 ± 0.001
+
+0.889 ± 0.002
+
+0.811 ± 0.001
+
+0.894 ± 0.004
+
+Cdataset
+
+0.827 ± 0.017
+
+0.761 ± 0.032
+
+0.941 ± 0.011
+
+0.947 ± 0.004
+
+0.943 ± 0.007
+
+0.950 ± 0.003
+
+Avg.
+
+0.723
+
+0.819
+
+0.875
+
+0.920
+
+0.884
+
+0.931
+
+Kdataset
+
+0.181 ± 0.034
+
+0.204 ± 0.022
+
+0.405 ± 0.007
+
+0.349 ± 0.007
+
+0.452 ± 0.004
+
+0.415 ± 0.009
+
+Bdataset
+
+0.238 ± 0.009
+
+0.240 ± 0.009
+
+0.477 ± 0.003
+
+0.527 ± 0.008
+
+0.454 ± 0.003
+
+0.543 ± 0.007
+
+Cdataset
+
+0.174 ± 0.071
+
+0.130 ± 0.012
+
+0.559 ± 0.021
+
+0.590 ± 0.008
+
+0.588 ± 0.019
+
+0.594 ± 0.011
+
+Avg.
+
+0.198
+
+0.191
+
+0.463
+
+0.504
+
+0.498
+
+0.517
+
+AUROC
+
+AUPR
+
+Chen et al. Journal of Translational Medicine
+
+(2025) 23:753
+
+surpassing the next best model, REDDA, by 1.1%. Furthermore, MRDDA also recorded an average AUPR of
+0.517, surpassing that obtained by the second-ranked
+method, REDDA, by 1.3%. Notably, MRDDA achieves
+the highest AUROC across the three datasets and secures
+the second-best AUPR on the Kdataset, with DRAGNN
+outperforming MRDDA in this metric. These findings underscore the highly competitive performance of
+MRDDA. We attribute this superior performance to the
+integration of multiple biological relations, including
+drugs, diseases, proteins, genes, and pathways, within a
+unified heterogeneous network. Many existing methods
+consider only limited types of interactions, such as those
+between drugs and disease, which may result in a narrow
+view of the underlying biological mechanisms. In contrast, MRDDA leverages these diverse relationships to
+capture richer semantic and structural information. This
+comprehensive modeling enables more accurate prediction of DDAs, highlighting the importance of incorporating multiple relations in drug repositioning tasks.
+New drug prediction
+
+To evaluate the predictive effect of MRDDA for identifying potential applications of new drugs, we conducted a
+de novo analysis using the Kdataset, which is similar to
+the methodology described in previous studies [36]. we
+specifically excluded all known disease associations for
+each drug under investigation, utilizing the remaining
+associations as the training dataset. As depicted in Fig. 2,
+our results indicate that MRDDA surpasses competing methods in both assessment metrics, achieving an
+AUROC of 0.772 and an AUPR of 0.203. These results
+underscore MRDDA’s superior performance in predicting indications for novel drugs. These findings suggest
+that GCN-based models predominantly rely on similarity
+
+Page 8 of 14
+
+measures, potentially constraining their capacity to effectively discern indications for novel drugs. In contrast,
+MRDDA incorporates external biological associations
+and high-order topology information, enhancing its
+capability to capture association information and predict
+indications for new drugs.
+Ablation study
+
+In this section, we systematically compare various training strategies for our proposed method across three distinct datasets to evaluate their efficacy. We propose and
+summarize four distinct variants of MRDDA as follows:
+• MRDDA-m: This variant omits the meta-path-based
+feature learning module.
+• MRDDA-f: This variant omits the layer attention
+mechanism, relying solely on concatenation to integrate features from each layer.
+• MRDDA-l: This variant excludes the subnetwork and
+graph attention module, thereby omitting the consideration of local association information.
+• MRDDA-n: This variant removes the balance factor
+from the loss function, thereby preserving the influence of imbalanced positive and negative samples
+without introducing any mitigation strategies.
+The evaluation metrics for MRDDA and its four variations across three datasets are outlined in Table 3. The
+results for MRDDA-l are significantly lower than those
+for MRDDA, highlighting the essential role of incorporating local association data in node representation learning. The findings of MRDDA-m demonstrate
+reduced performance relative to MRDDA, indicating the
+indispensability of high-order topological information in
+
+Fig. 2 The effectiveness of various methodologies in forecasting indications for new drugs within the Kdataset leverages drug-disease associations
+
+Chen et al. Journal of Translational Medicine
+
+(2025) 23:753
+
+Page 9 of 14
+
+Table 3 The AUROC and AUPR scores for MRDDA and its four variants, as determined through 10-fold cross-validation
+Variants
+
+Kdataset
+
+Bdataset
+
+AUROC
+
+AUPR
+
+Cdataset
+
+AUROC
+
+AUPR
+
+AUROC
+
+AUPR
+0.566 ± 0.021
+
+MRDDA-m
+
+0.943 ± 0.004
+
+0.406 ± 0.015
+
+0.889 ± 0.003
+
+0.527 ± 0.005
+
+0.947 ± 0.007
+
+MRDDA-f
+
+0.930 ± 0.008
+
+0.372 ± 0.007
+
+0.892 ± 0.003
+
+0.531 ± 0.003
+
+0.954 ± 0.004
+
+0.616 ± 0.003
+
+MRDDA-l
+
+0.932 ± 0.005
+
+0.354 ± 0.012
+
+0.860 ± 0.001
+
+0.477 ± 0.003
+
+0.935 ± 0.004
+
+0.483 ± 0.005
+
+MRDDA-n
+
+0.892 ± 0.007
+
+0.264 ± 0.013
+
+0.872 ± 0.006
+
+0.539 ± 0.008
+
+0.918 ± 0.005
+
+0.486 ± 0.006
+
+MRDDA
+
+0.949 ± 0.003
+
+0.415 ± 0.009
+
+0.894 ± 0.004
+
+0.543 ± 0.007
+
+0.950 ± 0.003
+
+0.594 ± 0.008
+
+augmenting MRDDA’s efficacy. Furthermore, MRDDA-n
+demonstrate that the application of weighted loss function can effectively alleviate the adverse effects caused
+by imbalanced distributions of positive and negative
+samples. Notably, MRDDA-f surpasses MRDDA in the
+Cdataset, highlighting the potential of targeted modifications in the feature fusion strategy to enhance performance in specific contexts. Overall, the ablation studies
+demonstrate that the four key components of MRDDA
+together enhance its exceptional performance.
+Analysis of layer attention mechanism
+
+Analyzing attention distribution is pivotal for comprehending the model’s behavior. By correlating the attention values with the drug and disease embeddings at
+each layer, we can elucidate the specific input features
+the model prioritizes during predictions. The visualization in Fig. 3 presents a lucid depiction of the attention
+distribution within the Kdataset. The experiment demonstrates that our proposed model effectively allocates
+higher attention values to more pertinent information,
+
+Fig. 3 Visualization of layer attention mechanism on Kdataset
+
+highlighting its adaptive and informed decision-making
+process.
+Case studies
+
+To further substantiate the credibility of MRDDA, we
+conducted case studies aimed at identifying potential drug candidates for Alzheimer’s disease (AD) and
+breast cancer (BC). Our approach involved using all
+documented DDAs from the Kdataset for training, while
+assigning the undocumented associations as the candidate sets. We then organized the drugs by descending priority based on their predicted scores of all DDAs.
+From this ordering, the top ten drug candidates for each
+condition were chosen for more in-depth analysis. For
+validation, we referenced reputable databases, including
+DB, PubChem, and ClinicalTrials, to verify the reliability
+of MRDDA’s predictions.
+Table 4 lists the top 10 drug candidates for AD as predicted by MRDDA. Six of these drugs are supported
+by relevant medical literature. For example, cyproheptadine, which acts as both a serotonin and histamine
+
+Chen et al. Journal of Translational Medicine
+
+(2025) 23:753
+
+Table 4 The top 10 potential drugs predicted by MRDDA for AD
+Rank
+
+DrugBank IDs
+
+Candidate Drugs
+
+Evidence
+
+1
+
+DB00434
+
+Cyproheptadine
+
+PubChem
+
+2
+
+DB00502
+
+Haloperidol
+
+3
+
+DB01068
+
+4
+
+DB01173
+
+5
+6
+
+Page 10 of 14
+
+Table 6 The molecular binding energies between the drugs and
+five target proteins, expressed in kcal/mol
+Drugs
+
+1B68
+
+2ZHU
+
+4EAX
+
+7S6U
+
+6EUE
+
+ClinicalTrials
+
+Cyproheptadine
+
+Clonazepam
+
+PubChem
+
+Haloperidol
+
+−7.6
+−7.7
+
+−7.4
+−6.2
+
+−7.5
+−6.6
+
+−7.7
+−7.8
+
+−8.5
+−9.3
+
+Orphenadrine
+
+NA
+
+Clonazepam
+
+DB00575
+
+Clonidine
+
+NA
+
+Orphenadrine
+
+−6.8
+−5.9
+
+−7.1
+−5.9
+
+−7.0
+−5.6
+
+−9.4
+−8.0
+
+−8.3
+−7.0
+
+DB00909
+
+Zonisamide
+
+PubChem
+
+Clonidine
+
+7
+
+DB05271
+
+Rotigotine
+
+PubChem/ClinicalTrials
+
+Zonisamide
+
+−5.2
+−5.8
+
+−6.3
+−6.6
+
+−4.8
+−5.3
+
+−6.1
+−6.8
+
+−7.7
+−8.2
+
+8
+
+DB00424
+
+Hyoscyamine
+
+NA
+
+Rotigotine
+
+9
+
+DB00392
+
+Profenamine
+
+NA
+
+Hyoscyamine
+
+−5.6
+−6.7
+
+−6.9
+−6.1
+
+−5.3
+−6.0
+
+−6.9
+−7.7
+
+−8.0
+−8.9
+
+10
+
+DB01235
+
+Levodopa
+
+PubChem/ClinicalTrials
+
+Profenamine
+
+−5.8
+−5.7
+
+−7.0
+−7.1
+
+−5.3
+−5.1
+
+−7.2
+−6.4
+
+−7.5
+−7.9
+
+Levodopa
+
+antagonist, has been identified as a potential inhibitor
+of erythropoietin-producing hepatocellular A4, a newly
+recognized molecular target for AD. Additionally, haloperidol, commonly used to treat schizophrenia and
+other psychoses, is also associated with AD according
+to our model. This association is backed by data from
+ClinicalTrials, further supporting its potential use in
+AD therapy.
+In the breast cancer (BC) case study, the top 10 drug
+candidates identified by MRDDA are listed in Tables 5,
+6, with eight confirmed as effective treatments through
+our literature review. Notably, sorafenib, a multikinase inhibitor taken orally that affects both surface
+and intracellular kinases, plays a vital role in blocking tumor cell growth and angiogenesis. It is recognized as the leading potential drug candidate for BC,
+supported by data from PubChem and ClinicalTrials.
+Additionally, zoledronic acid, employed in treating
+malignancy-related hypercalcemia, multiple myeloma,
+and bone metastases from solid tumors, is also predicted to be beneficial for BC, a claim supported by
+data from PubChem and ClinicalTrials. Overall, our
+
+Table 5 The top 10 potential drugs predicted by MRDDA for BC
+Rank
+
+DrugBank IDs
+
+Candidate Drugs
+
+Evidence
+
+1
+
+DB00398
+
+Sorafenib
+
+PubChem/ClinicalTrials
+
+2
+
+DB00399
+
+Zoledronic acid
+
+PubChem/ClinicalTrials
+
+3
+
+DB00215
+
+Citalopram
+
+PubChem/ClinicalTrials
+
+4
+
+DB01033
+
+Mercaptopurine
+
+PubChem/ClinicalTrials
+
+5
+
+DB00290
+
+Bleomycin
+
+NA
+
+6
+
+DB00650
+
+Leucovorin
+
+PubChem/ClinicalTrials
+
+7
+
+DB01222
+
+Budesonide
+
+PubChem/ClinicalTrials
+
+8
+
+DB01204
+
+Mitoxantrone
+
+PubChem/ClinicalTrials
+
+9
+
+DB06589
+
+Pazopanib
+
+PubChem
+
+10
+
+DB00717
+
+Norethisterone
+
+NA
+
+computational model has effectively identified several
+viable therapeutic strategies for both AD and BC.
+In addition to evaluating drug candidates identified
+by MRDDA, we also conducted molecular docking
+simulations to demonstrate MRDDA’s effectiveness in
+practical applications. Molecular docking, a structurebased drug repositioning technique, predicts receptorligand complex configurations to simulate interactions
+among drugs and target proteins, thus identifying new
+uses for existing drugs [37]. Specifically for Alzheimer’s disease (AD), we chose five key target proteins
+and performed molecular docking using AutoDock
+Vina [38] with 10 drug candidates. Molecular binding
+energy measures the binding strength between the drug
+molecule (ligand) and the target protein (receptor),
+with greater negative values indicating stronger affinity. The binding energy results for the selected target
+proteins associated with AD and the evaluated drugs
+are presented in Table 6. Regarding the experimental
+drug Orphenadrine, its binding energies with proteins
+identified by PDB codes 1B68, 2ZHU, 4EAX, 7S6U,
+and 6EUE are −5.9, −5.9, −5.6, −8.0, and −7.0 kcal/mol,
+respectively.
+For breast cancer (BC), we assessed the molecular
+binding energies of two unvalidated candidate drugs
+with the target protein estradiol (PDB code: 3HB5),
+characterizing the ligand-protein binding modes via
+docking simulations conducted with AutoDock Vina
+and DS visualizer software. The binding energy of
+bleomycin with estradiol is computed at −4.01 kcal/
+mol. As shown in Fig. 4, the interaction involves van
+der Waals forces with 11 amino acid residues, including GLU194, VAL188, and PHE192. Additionally, Pi-Pi
+T-shaped interactions and Amide-Pi Stacked interactions are observed between the aromatic ring structure
+and residue PHE226 and Ala191. There are also notable
+interactions such as a conventional hydrogen bond with
+
+Chen et al. Journal of Translational Medicine
+
+(2025) 23:753
+
+Page 11 of 14
+
+Fig. 4 Bleomycin (DrugBank ID: DB00290) was docked with estradiol (PDB code: 3HB5), and their molecular interactions were analyzed
+
+MET193, an unfavorable positive-positive interaction
+with ARG44, a Pi-sulfur interaction with HIS189, and a
+Pi-alkyl interaction with ALA191.
+Conversely, norethisterone’s binding energy with
+estradiol is −7.31 kcal/mol, indicating stronger binding. Figure 5 displays van der Waals interactions
+between the small molecule and the amino acids such
+
+as GLY186, GLY145, and CYS185. It also forms conventional hydrogen bonds with residues HIS221, SER142,
+and TYR155, alongside several hydrophobic interactions including carbon-hydrogen bonds, Pi-alkyl interactions, and alkyl interactions. The substantial binding
+affinity of norethisterone compared to bleomycin
+
+Fig. 5 Norethisterone (DrugBank ID: DB00717) was docked with estradiol (PDB code: 3HB5), and their molecular interactions were analyzed
+
+Chen et al. Journal of Translational Medicine
+
+(2025) 23:753
+
+suggests its higher therapeutic potential for treating
+breast cancer, providing critical insights for clinical
+strategies.
+Based on drug similarity, we constructed a network of
+19 drugs by selecting the top 10 pairs. MRDDA was then
+used to predict 30 potential diseases per drug, resulting
+in a comprehensive list of 248 diseases. Figure 6 illustrates the association network between these 19 drugs
+and the 248 diseases, with the drugs organized into seven
+distinct communities. Notably, the disease nodes with
+the highest degree, Lymphoma and Hypercalcemia, were
+each associated with eight drugs. The 15 drugs were categorized into several clusters, such as a drug community
+comprising doxorubicin, daunorubicin, vincristine, and
+vinblastine—drugs primarily used in the treatment of
+various cancers, such as AIDS-associated Kaposi’s sarcoma and metastatic cancers. Additionally, antibiotic
+
+Page 12 of 14
+
+drugs such as erythromycin, clarithromycin, rifampicin,
+and rifapentine were identified, along with drugs for
+inflammatory conditions (dexamethasone, betamethasone, and triamcinolone), ACE inhibitors (ramipril and
+trandolapril), immunosuppressants (everolimus and
+sirolimus), antifungal drugs (amphotericin B and nystatin), and anti-malarial drugs (hydroxychloroquine and
+chloroquine). Leveraging drug combinations presents
+significant potential for enhancing treatment effectiveness, reducing dosages, and minimizing toxicity [39,
+40]. The analysis findings indicate accurate predictions
+of several disease-drug community associations, offering potential new insights for future exploration of drug
+combinations.
+In summary, these case studies highlight MRDDA’s effectiveness in identifying potential treatments
+for specific diseases. The drug candidates identified
+
+Fig. 6 The network diagram illustrates 19 drugs and 248 diseases, with each drug or disease represented as a node. Each node’s size is determined
+by its degree, while the thickness of the connecting edges represents the predicted ranking between the nodes
+
+Chen et al. Journal of Translational Medicine
+
+(2025) 23:753
+
+Page 13 of 14
+
+by MRDDA are expected to offer clinicians valuable
+insights for practical therapeutic applications.
+
+Declarations
+
+Conclusion
+In this research, we present MRDDA, an innovative
+computational method designed to identify drug-disease associations (DDAs). By integrating information
+from various biological datasets, we create a heterogeneous network specific to DDAs. MRDDA utilizes a
+hybrid graph convolution framework to capture both
+broad and detailed features of drugs and diseases. It
+also employs a meta-path-based approach to uncover
+complex topological patterns in the network. Additionally, an attention mechanism is used to merge embeddings from different layers effectively. Experimental
+results demonstrate MRDDA’s superiority over existing
+prediction models. Comprehensive case studies further
+highlight its potential as a powerful tool for discovering new drug-disease connections, especially valuable
+for newly developed drugs that lack established associations. Despite its proven effectiveness, MRDDA has
+several limitations. One key limitation is the insufficient
+exploitation of diverse similarity measures between
+drugs and diseases, which may lead to an under-utilization of available information. Enhancing the model by
+integrating richer similarity descriptors could improve
+its predictive accuracy. Furthermore, the scalability of
+MRDDA to larger, more complex biological networks
+deserves further exploration. In future work, we plan to
+address these limitations by incorporating multifaceted
+similarity metrics, optimizing the model for large-scale
+biological datasets, and exploring transfer learning
+techniques to adapt MRDDA to other drug discovery
+tasks. These efforts aim to further enhance the utility
+and generalizability of MRDDA in computational drug
+repositioning.
+
+Consent for publication
+Not applicable.
+
+Acknowledgements
+Not applicable.
+Author contributions
+CC conceptualization and methodology. YZ validation and writing, YL data
+curation. JX investigation and writing—review & editing. DL funding acquisition. LW investigation and funding acquisition. All authors read and approved
+the final manuscript.
+Funding
+This research was supported by Natural Science Foundation of Beijing
+Municipal No.4252021, National High Level Hospital Clinical Research
+Funding-2023-NHLHCRF-YYPPLC-TJ-01, National Natural Science Foundation
+of China under Grants 62376017, Fundamental Research Funds for the Central
+Universities buctrc202403, buctrc202221.
+Data availability
+The data and source code are available at: https://github.com/Ethereal1z/
+MRDDA.
+
+Ethics approval and consent to participate
+Not applicable.
+
+Competing interests
+The authors declare that they have no Competing interests.
+Author details
+1
+College of Information Science and Technology, Beijing University of Chemical Technology, Beijing 100029, China. 2 School of Computer Science, Peking
+University, Beijing 100871, China. 3 the National Clinical Research Center
+for Respiratory Diseases, China-Japan Friendship Hospital, Beijing 100029,
+China.
+Received: 15 April 2025 Accepted: 19 June 2025
+
+References
+1. Hay M, Thomas DW, Craighead JL, Economides C, Rosenthal J. Clinical
+development success rates for investigational drugs. Nat Biotechnol.
+2014;32(1):40–51.
+2. Mohamed K, Yazdanpanah N, Saghazadeh A, Rezaei N. Computational
+drug discovery and repurposing for the treatment of covid-19: a systematic review. Bioorg Chem. 2021;106: 104490.
+3. Traylor JI, Sheppard HE, Ravikumar V, Breshears J, Raza SM, Lin CY, Patel
+SR, DeMonte F. Computational drug repositioning identifies potentially
+active therapies for chordoma. Neurosurgery. 2021;88(2):428–36.
+4. Xu P, Wei ZT, Li CC, Yuan JQ, Liu ZY, Liu WB. Drug-target prediction based
+on dynamic heterogeneous graph convolutional network. IEEE J Biomed
+Health Inform. 2024;28(11):6997–7005.
+5. Li Z, Huang JY, Liu XX, Xu P, Shen XW, Pan C, Zhang W, Liu WB, Han H.
+KRN-DTI: Towards accurate drug-target interaction prediction with
+Kolmogorov-Arnold and residual networks. J Methods. 2025;240:137–44.
+6. Fahimian G, Zahiri J, Arab SS, Sajedi RH. Repcool: computational drug
+repositioning via integrating heterogeneous biological networks. J Transl
+Med. 2020;18(1):1–10.
+7. Luo HM, Wang JX, Li M, Luo JW, Peng XQ, Wu FX, Pan Y. Drug repositioning based on comprehensive similarity measures and bi-random walk
+algorithm. Bioinformatics. 2016;32(17):2664–71.
+8. Chen HL, Zhang H, Zhang ZP, Cao YQ, Tang WL. Network-based inference
+methods for drug repositioning. Comput Mathe Methods Med. 2015;1:
+130620.
+9. Gottlieb A, Stein GY, Ruppin E, Sharan R. Predict: a method for inferring
+novel drug indications with application to personalized medicine. Mol
+Syst Biol. 2011;7:496.
+10. Zhou RY, Lu ZL, Luo HM, Xiang J, Zeng M, Li M. Nedd: a network embedding based method for predicting drug-disease associations. BMC
+Bioinformatics. 2020;21:1–12.
+11. Yang HP, Ding YJ, Tang JJ, Guo F. Drug-disease associations prediction
+via multiple kernel-based dual graph regularized least squares. Appl Soft
+Comput. 2021;112: 107811.
+12. Zhao BW, Su XR, Hu PW, Ma YP, Zhou X, Hu L. A geometric deep learning
+framework for drug repositioning over heterogeneous information
+networks. Brief Bioinform. 2022;23:bbac384.
+13. Zhang PL, Che C, Jin B, Yuan JL, Li RX, Zhu YJ. NCH-DDA: Neighborhood
+contrastive learning heterogeneous network for drug–disease association prediction. Expert Syst Appl. 2024;238:121855.
+14. Yu ZX, Huang F, Zhao XH, Xiao WJ, Zhang W. Predicting drug-disease
+associations through layer attention graph convolutional network. Brief
+Bioinform. 2021;22(4):bbaa243.
+15. Tang XF, Zhou C, Lu CC, Meng YJ, Xu JL, Hu XR, Tian G, Yang JL. Enhancing
+drug repositioning through local interactive learning with bilinear attention networks. IEEE J Biomed Health Inf. 2023
+
+Chen et al. Journal of Translational Medicine
+
+(2025) 23:753
+
+16. Sun XL, Wang B, Zhang J, Li M. Partner-specific drug repositioning
+approach based on graph convolutional network. IEEE J Biomed Health
+Inform. 2022;26(11):5757–65.
+17. Wang YX, Song JM, Wei MJ, Duan XD. Predicting potential drug-disease
+associations based on hypergraph learning with subgraph matching.
+Interdisc Sci-Comput Life Sci. 2023;15:249–61.
+18. Sun WC, Ren CJ, Xu JS, Zhang P. SAGCN: Using graph convolutional
+network with subgraph-aware for CIRCRNA-drug sensitivity identification.
+IEEE-ACM Trans Comput Biol Bioinf. 2024;21:1765–74.
+19. Shang YF, Wang ZX, Chen YY, Yang XY, Ren ZH, Zeng XX, Xu L. HNFDDA: subgraph contrastive-driven transformer-style heterogeneous
+network embedding for drug-disease association prediction. BMC Biol.
+2025;23:101.
+20. Dong YX, Chawla NV, Swami A. metapath2vec: Scalable representation
+learning for heterogeneous networks. Kdd’17: Proceedings of the 23rd
+Acm Sigkdd International Conference on Knowledge Discovery and Data
+Mining, 2017;135–144.
+21. Gu YW, Zheng S, Yin QJ, Jiang R, Li J. Redda: Integrating multiple biological relations to heterogeneous graph neural network for drug-disease
+association prediction. Comput Biol Med. 2022;150: 106127.
+22. Wishart DS, Knox C, Guo AC, Cheng D, Shrivastava S, Tzur D, Gautam B,
+Hassanali M. Drugbank: a knowledgebase for drugs, drug actions and
+drug targets. Nucleic Acids Res. 2008;36:901–6.
+23. Davis AP, Grondin CJ, Johnson RJ, Sciaky D, Wiegers J, Wiegers TC, Mattingly CJ. Comparative toxicogenomics database (ctd): update 2021.
+Nucleic Acids Res. 2021;49(D1):1138–43.
+24. Kanehisa M, Goto S. Kegg: Kyoto encyclopedia of genes and genomes.
+Nucleic Acids Res. 2000;28(1):27–30.
+25. Mering C, Huynen M, Jaeggi D, Schmidt S, Bork P, Snel B. String: a
+database of predicted functional associations between proteins. Nucleic
+Acids Res. 2003;31(1):258–61.
+26. Apweiler R, Bairoch A, Wu CH, Barker WC, Boeckmann B, Ferro S, Gasteiger
+E, Huang HZ, Lopez R, Magrane M, Martin MJ, Natale DA, O’Donovan
+C, Redaschi N, Yeh LSL. Uniprot: the universal protein knowledgebase.
+Nucleic Acids Res. 2004;32:115–9.
+27. Zhang W, Yue X, Lin WR, Wu WJ, Liu RQ, Huang F, Liu F. Predicting drugdisease associations by using similarity constrained matrix factorization.
+BMC Bioinf. 2018;19:1–12.
+28. Hamosh A, Scott AF, Amberger JS, Bocchini CA, McKusick VA. Online mendelian inheritance in man (OMIM), a knowledgebase of human genes
+and genetic disorders. Nucleic Acids Res. 2005;33:514–7.
+29. Kipf TN, Welling M. Semi-supervised classification with graph convolutional networks. 2016; arXiv preprint arXiv:​1609.​02907.
+30. Velickovic P, Cucurull G, Casanova A, Romero A, Lio P, Bengio Y. Graph
+attention networks. Stat. 2017;1050(20):10–48550.
+31. Wang HZ, Huang F, Xiong ZK, Zhang W. A heterogeneous network-based
+method with attentive meta-path extraction for predicting drug-target
+interactions. Brief Bioinform. 2022;23(4):bbac184.
+32. Kingma DP, Ba J. Adam: A method for stochastic optimization. 2014; arXiv
+preprint arXiv:​1412.​6980.
+33. Smith LN. Cyclical learning rates for training neural networks. 2017 Ieee
+Winter Conference on Applications of Computer Vision (Wacv 2017),
+2017;464–472.
+34. Li J, Zhang S, Liu T, Ning CX, Zhang ZX, Zhou W. Neural inductive matrix
+completion with graph convolutional networks for miRNA-disease association prediction. Bioinformatics. 2020;36(8):2538–46.
+35. Meng YJ, Lu CC, Jin M, Xu JL, Zeng XX, Yang JL. A weighted bilinear neural
+collaborative filtering approach for drug repositioning. Brief Bioinform.
+2022;23(2):bbab581.
+36. Meng YJ, Wang Y, Xu JL, Lu CC, Tang XF, Peng T, Zhang BG, Tian G, Yang
+JL. Drug repositioning based on weighted local information augmented
+graph neural network. Brief Bioinform. 2024;25(1):bbad431.
+37. Gao KY, Fokoue A, Luo H, Iyengar A, Dey S, Zhang P. Interpretable drug
+target prediction using deep neural representation. Proceedings of the
+Twenty-Seventh International Joint Conference on Artificial Intelligence,
+2018;3371–3377.
+38. Trott O, Olson AJ. Software news and update autodock vina: Improving
+the speed and accuracy of docking with a new scoring function, efficient
+optimization, and multithreading. J Comput Chem. 2010;31(2):455–61.
+
+Page 14 of 14
+
+39. Chen X, Ren BA, Chen M, Liu MX, Ren W, Wang QX, Zhang LX, Yan GY.
+Asdcd: Antifungal synergistic drug combination database. PLoS ONE.
+2014;9(1):e86499.
+40. Sun XQ, Bao JG, You ZH, Chen X, Cui J. Modeling of signaling crosstalkmediated drug resistance and its implications on drug combination.
+Oncotarget. 2016;7(39):63995–4006.
+
+Publisher’s Note
+
+Springer Nature remains neutral with regard to jurisdictional claims in published maps and institutional affiliations.
+
+
